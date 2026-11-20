@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { AboutSection, ServicesSection } from './components/AboutServices';
 import { ContactSection, Footer } from './components/ContactFooter';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -83,6 +84,7 @@ export default function App() {
       <FirebaseProvider>
         <PortfolioShell />
       </FirebaseProvider>
+      <SpeedInsights />
     </ErrorBoundary>
   );
 }
