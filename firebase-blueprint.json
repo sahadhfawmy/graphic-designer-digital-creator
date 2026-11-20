@@ -1,0 +1,257 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated portfolio visitor or studio administrator profile.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "role": {
+          "type": "string",
+          "enum": ["client", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "email", "role", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Explicit administrator membership document keyed by UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 150
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "PortfolioProject": {
+      "title": "PortfolioProject",
+      "description": "Real-time synced portfolio concept or design study displayed in Selected Work.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "subtitle": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Logo & Branding",
+            "Graphic Design",
+            "Social Media Design",
+            "Posters & Flyers",
+            "Book Cover Design",
+            "Photo Editing",
+            "AI Video Creation",
+            "Digital Projects"
+          ]
+        },
+        "year": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 4,
+          "pattern": "^[0-9]{4}$"
+        },
+        "image": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "^(/assets/|https://).+"
+        },
+        "blurb": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 260
+        },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 1200
+        },
+        "deliverables": {
+          "type": "array",
+          "description": "Up to 10 deliverable strings, each <= 80 characters."
+        },
+        "tools": {
+          "type": "array",
+          "description": "Up to 10 tool strings, each <= 80 characters."
+        },
+        "span": {
+          "type": "string",
+          "enum": ["normal", "wide"]
+        },
+        "sortOrder": {
+          "type": "number"
+        },
+        "published": {
+          "type": "boolean"
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "subtitle",
+        "category",
+        "year",
+        "image",
+        "blurb",
+        "description",
+        "deliverables",
+        "tools",
+        "span",
+        "sortOrder",
+        "published",
+        "ownerUid",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProjectBrief": {
+      "title": "ProjectBrief",
+      "description": "Client project inquiry submitted via the Contact & Hire form.",
+      "type": "object",
+      "properties": {
+        "authorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 5,
+          "maxLength": 150,
+          "pattern": "^[^\\s@]+@[^\\s@]+\\.[a-zA-Z]{2,}$"
+        },
+        "service": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "budget": {
+          "type": "string",
+          "enum": ["Let's discuss", "Under $50", "$50 – $150", "$150 – $500", "$500+"]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 20,
+          "maxLength": 2000
+        },
+        "status": {
+          "type": "string",
+          "enum": ["submitted", "reviewing", "accepted", "archived"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "authorUid",
+        "name",
+        "email",
+        "service",
+        "budget",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profiles isolated by UID and admin access."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Admin role membership lookup documents."
+    },
+    "/projects/{projectId}": {
+      "schema": { "$ref": "#/entities/PortfolioProject" },
+      "description": "Real-time portfolio projects readable by authenticated users when published and writable only by admins."
+    },
+    "/briefs/{briefId}": {
+      "schema": { "$ref": "#/entities/ProjectBrief" },
+      "description": "Real-time client project briefs isolated to their author or studio admin."
+    }
+  }
+}

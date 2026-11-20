@@ -1,0 +1,238 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitive Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
+    // Pure token-based bootstrapped admin check (safe for allow list queries - zero DB reads)
+    function isBootstrappedAdmin() {
+      return isSignedIn()
+        && isEmailVerified()
+        && request.auth.token.email == 'fawmysahadh90@gmail.com';
+    }
+
+    // Full admin check including admins collection lookup (for single-doc operations only)
+    function isAdmin() {
+      return isBootstrappedAdmin()
+        || (isSignedIn() && isEmailVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    // Entity Validation Blueprints (synchronized with firebase-blueprint.json)
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'email', 'role', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'displayName', 'email', 'photoURL', 'role', 'createdAt', 'updatedAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 150 && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[a-zA-Z]{2,}$')
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500))
+        && data.role in ['client', 'admin']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRecord(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'createdAt'])
+        && data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 150
+        && data.createdAt is timestamp;
+    }
+
+    function isValidPortfolioProject(data) {
+      return data.keys().hasAll([
+          'id', 'title', 'subtitle', 'category', 'year', 'image', 'blurb',
+          'description', 'deliverables', 'tools', 'span', 'sortOrder', 'published',
+          'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'title', 'subtitle', 'category', 'year', 'image', 'blurb',
+          'description', 'deliverables', 'tools', 'span', 'sortOrder', 'published',
+          'ownerUid', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && data.id.size() >= 1 && data.id.size() <= 64 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.title is string && data.title.size() >= 2 && data.title.size() <= 100
+        && data.subtitle is string && data.subtitle.size() >= 2 && data.subtitle.size() <= 120
+        && data.category in [
+          'Logo & Branding', 'Graphic Design', 'Social Media Design', 'Posters & Flyers',
+          'Book Cover Design', 'Photo Editing', 'AI Video Creation', 'Digital Projects'
+        ]
+        && data.year is string && data.year.size() == 4 && data.year.matches('^[0-9]{4}$')
+        && data.image is string && data.image.size() >= 1 && data.image.size() <= 300 && data.image.matches('^(/assets/|https://).+')
+        && data.blurb is string && data.blurb.size() >= 5 && data.blurb.size() <= 260
+        && data.description is string && data.description.size() >= 10 && data.description.size() <= 1200
+        && data.deliverables is list && data.deliverables.size() >= 1 && data.deliverables.size() <= 10
+        && data.deliverables[0] is string && data.deliverables[0].size() <= 80
+        && data.tools is list && data.tools.size() >= 1 && data.tools.size() <= 10
+        && data.tools[0] is string && data.tools[0].size() <= 80
+        && data.span in ['normal', 'wide']
+        && data.sortOrder is number && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && data.published is bool
+        && data.ownerUid is string && data.ownerUid.size() >= 1 && data.ownerUid.size() <= 128 && data.ownerUid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidProjectBrief(data) {
+      return data.keys().hasAll([
+          'authorUid', 'name', 'email', 'service', 'budget', 'message',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'authorUid', 'name', 'email', 'service', 'budget', 'message',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 && data.authorUid.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 100
+        && data.email is string && data.email.size() >= 5 && data.email.size() <= 150 && data.email.matches('^[^\\s@]+@[^\\s@]+\\.[a-zA-Z]{2,}$')
+        && data['service'] is string && data['service'].size() >= 2 && data['service'].size() <= 120
+        && data.budget in ["Let's discuss", "Under $50", "$50 – $150", "$150 – $500", "$500+"]
+        && data.message is string && data.message.size() >= 20 && data.message.size() <= 2000
+        && data.status in ['submitted', 'reviewing', 'accepted', 'archived']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // Users collection (PII isolated strictly to owner or admin)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().uid == request.auth.uid || isBootstrappedAdmin());
+
+      allow create: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && userId == request.auth.uid
+        && incoming().uid == request.auth.uid
+        && incoming().email == request.auth.token.email
+        && (incoming().role == 'client' || (incoming().role == 'admin' && isBootstrappedAdmin()))
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (userId == request.auth.uid
+            && incoming().role == existing().role
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'updatedAt']))
+          || (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'role', 'updatedAt']))
+        );
+
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    // Admins lookup collection
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (adminId == request.auth.uid || isAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isBootstrappedAdmin()
+        && isValidId(adminId)
+        && isValidAdminRecord(incoming())
+        && incoming().uid == adminId
+        && incoming().createdAt == request.time;
+      allow update, delete: if false;
+    }
+
+    // Portfolio projects collection (published items readable when signed in; writes admin-only)
+    match /projects/{projectId} {
+      allow get: if isSignedIn() && isValidId(projectId) && (existing().published == true || isAdmin());
+      allow list: if isSignedIn() && (existing().published == true || isBootstrappedAdmin());
+
+      allow create: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(projectId)
+        && isValidPortfolioProject(incoming())
+        && incoming().id == projectId
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isAdmin();
+
+      allow update: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(projectId)
+        && isValidPortfolioProject(incoming())
+        && incoming().id == existing().id
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && isAdmin()
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'subtitle', 'category', 'year', 'image', 'blurb',
+          'description', 'deliverables', 'tools', 'span', 'sortOrder',
+          'published', 'updatedAt'
+        ]);
+
+      allow delete: if isAdmin() && isValidId(projectId);
+    }
+
+    // Project briefs collection (isolated to author or admin, with terminal state locking)
+    match /briefs/{briefId} {
+      allow get: if isSignedIn() && isValidId(briefId) && (existing().authorUid == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (existing().authorUid == request.auth.uid || isBootstrappedAdmin());
+
+      allow create: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(briefId)
+        && isValidProjectBrief(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().status == 'submitted'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(briefId)
+        && isValidProjectBrief(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          (existing().authorUid == request.auth.uid
+            && !(existing().status in ['accepted', 'archived'])
+            && incoming().status == existing().status
+            && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'service', 'budget', 'message', 'updatedAt']))
+          || (isAdmin()
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn()
+        && isEmailVerified()
+        && isValidId(briefId)
+        && (
+          (existing().authorUid == request.auth.uid && !(existing().status in ['accepted', 'archived']))
+          || isAdmin()
+        );
+    }
+  }
+}
